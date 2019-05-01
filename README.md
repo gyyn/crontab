@@ -1,5 +1,7 @@
 # crontab
------------------------------
+
+test
+
 nohup ./etcd --name centos1 \  
 --initial-advertise-peer-urls http://192.168.0.111:2380 \  
 --listen-peer-urls http://192.168.0.111:2380 \  
