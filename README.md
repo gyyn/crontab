@@ -1,5 +1,12 @@
 # crontab
 
+etcd  
+tar -zxvf etcd-v3.3.8-linux-amd64.tar.gz  
+单机  
+nohup ./etcd --listen-client-urls 'http://0.0.0.0:2379' --advertise-client-urls 'http://0.0.0.0:2379' &  
+ETCDCTL_API=3 ./etcdctl put "name" "gyyn"  
+
+集群  
 nohup ./etcd --name centos1 \  
 --initial-advertise-peer-urls http://192.168.0.111:2380 \  
 --listen-peer-urls http://192.168.0.111:2380 \  
