@@ -21,7 +21,7 @@ var (
 )
 
 //保存任务接口
-// POST job={"name": "job1", "command": "echo hello", "cronExpr": "* * * * *"}
+//POST job={"name": "job1", "command": "echo hello", "cronExpr": "* * * * *"}
 func handleJobSave(resp http.ResponseWriter, req *http.Request) {
 	var (
 		err     error
@@ -127,20 +127,20 @@ func handleJobKill(resp http.ResponseWriter, req *http.Request) {
 		bytes []byte
 	)
 
-	// 解析POST表单
+	//解析POST表单
 	if err = req.ParseForm(); err != nil {
 		goto ERR
 	}
 
-	// 要杀死的任务名
+	//要杀死的任务名
 	name = req.PostForm.Get("name")
 
-	// 杀死任务
+	//杀死任务
 	if err = G_jobMgr.KillJob(name); err != nil {
 		goto ERR
 	}
 
-	// 正常应答
+	//正常应答
 	if bytes, err = common.BuildResponse(0, "success", nil); err == nil {
 		resp.Write(bytes)
 	}
@@ -152,7 +152,7 @@ ERR:
 	}
 }
 
-// 查询任务日志
+//查询任务日志
 func handleJobLog(resp http.ResponseWriter, req *http.Request) {
 	var (
 		err        error
@@ -165,12 +165,12 @@ func handleJobLog(resp http.ResponseWriter, req *http.Request) {
 		bytes      []byte
 	)
 
-	// 解析GET参数
+	//解析GET参数
 	if err = req.ParseForm(); err != nil {
 		goto ERR
 	}
 
-	// 获取请求参数 /job/log?name=job10&skip=0&limit=10
+	//获取请求参数 /job/log?name=job10&skip=0&limit=10
 	name = req.Form.Get("name")
 	skipParam = req.Form.Get("skip")
 	limitParam = req.Form.Get("limit")
@@ -185,7 +185,7 @@ func handleJobLog(resp http.ResponseWriter, req *http.Request) {
 		goto ERR
 	}
 
-	// 正常应答
+	//正常应答
 	if bytes, err = common.BuildResponse(0, "success", logArr); err == nil {
 		resp.Write(bytes)
 	}
@@ -197,7 +197,7 @@ ERR:
 	}
 }
 
-// 获取健康worker节点列表
+//获取健康worker节点列表
 func handleWorkerList(resp http.ResponseWriter, req *http.Request) {
 	var (
 		workerArr []string
@@ -209,7 +209,7 @@ func handleWorkerList(resp http.ResponseWriter, req *http.Request) {
 		goto ERR
 	}
 
-	// 正常应答
+	//正常应答
 	if bytes, err = common.BuildResponse(0, "success", workerArr); err == nil {
 		resp.Write(bytes)
 	}
@@ -239,7 +239,7 @@ func InitApiServer() (err error) {
 	mux.HandleFunc("/job/log", handleJobLog)
 	mux.HandleFunc("/worker/list", handleWorkerList)
 
-	// /index.html
+	///index.html
 	//静态文件目录
 	staticDir = http.Dir(G_config.WebRoot)
 	staticHandler = http.FileServer(staticDir)
