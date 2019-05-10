@@ -38,5 +38,5 @@ etcdctl cluster-health
 etcdctl member list  
 
 交叉编译  
-GOOS=linux GOARCH=amd64 go bulid src/github.com/gyyn/crontab/master/main/master.go  
-GOOS=linux GOARCH=amd64 go bulid src/github.com/gyyn/crontab/worker/main/worker.go  
+GOOS=linux GOARCH=amd64 go build src/github.com/gyyn/crontab/master/main/master.go  
+GOOS=linux GOARCH=amd64 go build src/github.com/gyyn/crontab/worker/main/worker.go  
