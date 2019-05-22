@@ -2,9 +2,11 @@ package master
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gyyn/crontab/common"
@@ -221,6 +223,124 @@ ERR:
 	}
 }
 
+//POST addworker={"user": "admin", "pwd": "hahaha", "addr": "111.111.111.111"}
+func handleWorkerAdd(resp http.ResponseWriter, req *http.Request) {
+	var (
+		err           error
+		postAddworker string
+		workerSSH     common.WorkerSSH
+		cli           SSHCli
+		output        string
+		bytes         []byte
+	)
+
+	//解析post表单
+	if err = req.ParseForm(); err != nil {
+		goto ERR
+	}
+
+	//取表单中的addworker字段
+	postAddworker = req.PostForm.Get("addworker")
+
+	//反序列化workerSSH
+	if err = json.Unmarshal([]byte(postAddworker), &workerSSH); err != nil {
+		goto ERR
+	}
+
+	cli = SSHCli{
+		user: workerSSH.User,
+		pwd:  workerSSH.Pwd,
+		addr: workerSSH.Addr + ":22",
+	}
+
+	//if err = cli.SendFile("./worker", "./"); err != nil {
+	//	goto ERR
+	//}
+	if err = cli.SendFile("./worker.json", "./"); err != nil {
+		goto ERR
+	}
+
+	if output, err = cli.Run("chmod u+x ./worker"); err != nil {
+		goto ERR
+	}
+	fmt.Printf("%v\n%v", output, err)
+
+	if output, err = cli.Run("nohup ./worker -config ./worker.json > log.out 2>&1 &"); err != nil {
+		goto ERR
+	}
+	fmt.Printf("%v\n%v", output, err)
+
+	//返回正常应答
+	if bytes, err = common.BuildResponse(0, "success", nil); err == nil {
+		resp.Write(bytes)
+	}
+	return
+ERR:
+	//返回异常应答
+	if bytes, err = common.BuildResponse(-1, err.Error(), nil); err == nil {
+		resp.Write(bytes)
+	}
+}
+
+func handleWorkerDelete(resp http.ResponseWriter, req *http.Request) {
+	var (
+		err           error
+		postAddworker string
+		workerSSH     common.WorkerSSH
+		cli           SSHCli
+		output        string
+		psInfo        []string
+		workerPid     string
+		bytes         []byte
+	)
+
+	//解析post表单
+	if err = req.ParseForm(); err != nil {
+		goto ERR
+	}
+
+	//取表单中的deleteworker字段
+	postAddworker = req.PostForm.Get("deleteworker")
+
+	//反序列化workerSSH
+	if err = json.Unmarshal([]byte(postAddworker), &workerSSH); err != nil {
+		goto ERR
+	}
+
+	cli = SSHCli{
+		user: workerSSH.User,
+		pwd:  workerSSH.Pwd,
+		addr: workerSSH.Addr + ":22",
+	}
+
+	if output, err = cli.Run("ps aux | grep ./worker.json | grep -v grep"); err != nil {
+		goto ERR
+	}
+	fmt.Printf("%v\n%v", output, err)
+
+	if output != "" {
+		psInfo = strings.Fields(output)
+		workerPid = psInfo[1]
+	}
+	fmt.Println(psInfo)
+	fmt.Println(workerPid)
+
+	if _, err = cli.Run("kill -9 " + workerPid); err != nil {
+		goto ERR
+	}
+
+	//返回正常应答
+	if bytes, err = common.BuildResponse(0, "success", nil); err == nil {
+		resp.Write(bytes)
+	}
+	return
+ERR:
+	//返回异常应答
+	if bytes, err = common.BuildResponse(-1, err.Error(), nil); err == nil {
+		resp.Write(bytes)
+	}
+}
+
 //初始化服务
 func InitApiServer() (err error) {
 	var (
@@ -238,6 +358,8 @@ func InitApiServer() (err error) {
 	mux.HandleFunc("/job/kill", handleJobKill)
 	mux.HandleFunc("/job/log", handleJobLog)
 	mux.HandleFunc("/worker/list", handleWorkerList)
+	mux.HandleFunc("/worker/add", handleWorkerAdd)
+	mux.HandleFunc("/worker/delete", handleWorkerDelete)
 
 	///index.html
 	//静态文件目录

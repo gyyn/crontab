@@ -23,7 +23,7 @@ var (
 )
 
 //获取本机网卡IP
-func getLocalIP() (ipv4 string, err error) {
+func GetLocalIP() (ipv4 string, err error) {
 	var (
 		addrs   []net.Addr
 		addr    net.Addr
@@ -124,7 +124,7 @@ func InitRegister() (err error) {
 	}
 
 	//本机IP
-	if localIp, err = getLocalIP(); err != nil {
+	if localIp, err = GetLocalIP(); err != nil {
 		return
 	}
 

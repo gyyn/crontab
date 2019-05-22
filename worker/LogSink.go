@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"gopkg.in/gomail.v2"
+
 	"github.com/gyyn/crontab/common"
 	"github.com/mongodb/mongo-go-driver/mongo"
 	"github.com/mongodb/mongo-go-driver/mongo/clientopt"
@@ -39,6 +41,31 @@ func (logSink *LogSink) writeLoop() {
 	for {
 		select {
 		case log = <-logSink.logChan:
+
+			if log.Err == "" {
+				to := []string{log.Email}
+				localIp, _ := GetLocalIP()
+
+				subject := log.JobName + " " + time.Unix(time.Now().Unix(), 0).Format("2006-01-02 15:04:05") + " Err"
+
+				strPlanTime := time.Unix(log.PlanTime/1000, 0).Format("2006-01-02 15:04:05")
+				strScheduleTime := time.Unix(log.ScheduleTime/1000, 0).Format("2006-01-02 15:04:05")
+				strStartTime := time.Unix(log.StartTime/1000, 0).Format("2006-01-02 15:04:05")
+				strEndTime := time.Unix(log.EndTime/1000, 0).Format("2006-01-02 15:04:05")
+
+				body := "Err\n" +
+					"JobName: " + log.JobName + "\r\n" +
+					"Command: " + log.Command + "\r\n" +
+					"Output: " + log.Output + "\r\n" +
+					"PlanTime: " + strPlanTime + "\r\n" +
+					"ScheduleTime: " + strScheduleTime + "\r\n" +
+					"StartTime: " + strStartTime + "\r\n" +
+					"EndTime: " + strEndTime + "\r\n" +
+					"LocalIP: " + localIp
+
+				sendMail(to, subject, body)
+			}
+
 			if logBatch == nil {
 				logBatch = &common.LogBatch{}
 				//让这个批次超时自动提交(给1秒的时间）
@@ -64,7 +91,7 @@ func (logSink *LogSink) writeLoop() {
 				//取消定时器
 				commitTimer.Stop()
 			}
-		case timeoutBatch = <-logSink.autoCommitChan: // 过期的批次
+		case timeoutBatch = <-logSink.autoCommitChan: //过期的批次
 			//判断过期批次是否仍旧是当前的批次
 			if timeoutBatch != logBatch {
 				continue //跳过已经被提交的批次
@@ -110,4 +137,44 @@ func (logSink *LogSink) Append(jobLog *common.JobLog) {
 	default:
 		//队列满了就丢弃
 	}
+}
+
+// 发送邮件
+func sendMail(to []string, subject string, body string) error {
+	username := "gpcrontab@163.com"
+	password := "crontab163"
+	host := "smtp.163.com"
+	//465 SMTPS
+	port := 465
+	from := "gpcrontab@163.com"
+	send_to := StrSliceRemoveRepeat(to) // 取重
+	m := gomail.NewMessage()
+	m.SetAddressHeader("From", from, from) //发件人
+	m.SetHeader("To", send_to...)          //收件人
+	//m.SetAddressHeader("Cc", "dan@example.com", "Dan")  //抄送
+	//m.SetHeader("Bcc", m.FormatAddress("xxxx@gmail.com", "xxxx")) //暗送
+	m.SetHeader("Subject", subject) //主题
+	m.SetBody("text/html", body)    //正文
+	//m.Attach("/home/Alex/lolcat.jpg") //附件
+	d := gomail.NewDialer(host, port, username, password)
+	return d.DialAndSend(m)
+}
+
+// slice去重
+func StrSliceRemoveRepeat(slice []string) (newSlice []string) {
+	for _, val := range slice {
+		if len(newSlice) == 0 {
+			newSlice = append(newSlice, val)
+		} else {
+			for k, v := range newSlice {
+				if val == v {
+					break
+				}
+				if k == len(newSlice)-1 {
+					newSlice = append(newSlice, val)
+				}
+			}
+		}
+	}
+	return
 }

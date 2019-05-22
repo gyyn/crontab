@@ -19,33 +19,6 @@ var (
 	G_scheduler *Scheduler
 )
 
-//处理任务事件
-func (scheduler *Scheduler) handleJobEvent(jobEvent *common.JobEvent) {
-	var (
-		jobSchedulePlan *common.JobSchedulePlan
-		jobExecuteInfo  *common.JobExecuteInfo
-		jobExecuting    bool
-		jobExisted      bool
-		err             error
-	)
-	switch jobEvent.EventType {
-	case common.JOB_EVENT_SAVE: //保存任务事件
-		if jobSchedulePlan, err = common.BuildJobSchedulePlan(jobEvent.Job); err != nil {
-			return
-		}
-		scheduler.jobPlanTable[jobEvent.Job.Name] = jobSchedulePlan
-	case common.JOB_EVENT_DELETE: //删除任务事件
-		if jobSchedulePlan, jobExisted = scheduler.jobPlanTable[jobEvent.Job.Name]; jobExisted {
-			delete(scheduler.jobPlanTable, jobEvent.Job.Name)
-		}
-	case common.JOB_EVENT_KILL: //强杀任务事件
-		//取消掉Command执行, 判断任务是否在执行中
-		if jobExecuteInfo, jobExecuting = scheduler.jobExecutingTable[jobEvent.Job.Name]; jobExecuting {
-			jobExecuteInfo.CancelFunc() //触发command杀死shell子进程, 任务得到退出
-		}
-	}
-}
-
 //尝试执行任务
 func (scheduler *Scheduler) TryStartJob(jobPlan *common.JobSchedulePlan) {
 	//调度 和 执行 是2件事情
@@ -107,6 +80,33 @@ func (scheduler *Scheduler) TrySchedule() (scheduleAfter time.Duration) {
 	return
 }
 
+//处理任务事件
+func (scheduler *Scheduler) handleJobEvent(jobEvent *common.JobEvent) {
+	var (
+		jobSchedulePlan *common.JobSchedulePlan
+		jobExecuteInfo  *common.JobExecuteInfo
+		jobExecuting    bool
+		jobExisted      bool
+		err             error
+	)
+	switch jobEvent.EventType {
+	case common.JOB_EVENT_SAVE: //保存任务事件
+		if jobSchedulePlan, err = common.BuildJobSchedulePlan(jobEvent.Job); err != nil {
+			return
+		}
+		scheduler.jobPlanTable[jobEvent.Job.Name] = jobSchedulePlan
+	case common.JOB_EVENT_DELETE: //删除任务事件
+		if jobSchedulePlan, jobExisted = scheduler.jobPlanTable[jobEvent.Job.Name]; jobExisted {
+			delete(scheduler.jobPlanTable, jobEvent.Job.Name)
+		}
+	case common.JOB_EVENT_KILL: //强杀任务事件
+		//取消掉Command执行, 判断任务是否在执行中
+		if jobExecuteInfo, jobExecuting = scheduler.jobExecutingTable[jobEvent.Job.Name]; jobExecuting {
+			jobExecuteInfo.CancelFunc() //触发command杀死shell子进程, 任务得到退出
+		}
+	}
+}
+
 //处理任务结果
 func (scheduler *Scheduler) handleJobResult(result *common.JobExecuteResult) {
 	var (
@@ -117,6 +117,7 @@ func (scheduler *Scheduler) handleJobResult(result *common.JobExecuteResult) {
 
 	//生成执行日志
 	if result.Err != common.ERR_LOCK_ALREADY_REQUIRED {
+		localIp, _ := GetLocalIP()
 		jobLog = &common.JobLog{
 			JobName:      result.ExecuteInfo.Job.Name,
 			Command:      result.ExecuteInfo.Job.Command,
@@ -125,6 +126,8 @@ func (scheduler *Scheduler) handleJobResult(result *common.JobExecuteResult) {
 			ScheduleTime: result.ExecuteInfo.RealTime.UnixNano() / 1000 / 1000,
 			StartTime:    result.StartTime.UnixNano() / 1000 / 1000,
 			EndTime:      result.EndTime.UnixNano() / 1000 / 1000,
+			LocalIP:      localIp,
+			Email:        result.ExecuteInfo.Job.Email,
 		}
 		if result.Err != nil {
 			jobLog.Err = result.Err.Error()
@@ -170,11 +173,6 @@ func (scheduler *Scheduler) scheduleLoop() {
 	}
 }
 
-//推送任务变化事件
-func (scheduler *Scheduler) PushJobEvent(jobEvent *common.JobEvent) {
-	scheduler.jobEventChan <- jobEvent
-}
-
 //初始化调度器
 func InitScheduler() (err error) {
 	G_scheduler = &Scheduler{
@@ -186,6 +184,11 @@ func InitScheduler() (err error) {
 	//启动调度协程
 	go G_scheduler.scheduleLoop()
 	return
+}
+
+//推送任务变化事件
+func (scheduler *Scheduler) PushJobEvent(jobEvent *common.JobEvent) {
+	scheduler.jobEventChan <- jobEvent
 }
 
 //回传任务执行结果

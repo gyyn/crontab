@@ -37,6 +37,23 @@ nohup ./etcd --name centos3 \
 etcdctl cluster-health  
 etcdctl member list  
 
+
+MongoDB  
+tar -zxvf mongodb-linux-x86_64-rhel70-4.0.0.tgz  
+cd mongodb-linux-x86_64-rhel70-4.0.0  
+mkdir data  
+nohup bin/mongod --dbpath=./data --bind_ip=0.0.0.0 &  
+bin/mongo  
+\> show databases  
+\> use my_db  
+\> db.createCollection("my_collection")  
+\> show collections  
+\> db.my_collection.insertOne({uid:1000,name:"xiaoming"})  
+\> db.my_collection.find()  
+\> db.my_collection.find({uid:1000})  
+\> db.my_collection.createIndex({uid:1})  
+
+
 交叉编译  
 GOOS=linux GOARCH=amd64 go build src/github.com/gyyn/crontab/master/main/master.go  
 GOOS=linux GOARCH=amd64 go build src/github.com/gyyn/crontab/worker/main/worker.go  

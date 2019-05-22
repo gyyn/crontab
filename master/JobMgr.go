@@ -94,6 +94,7 @@ func (jobMgr *JobMgr) SaveJob(job *common.Job) (oldJob *common.Job, err error) {
 	return
 }
 
+//删除任务
 func (jobMgr *JobMgr) DeleteJob(name string) (oldJob *common.Job, err error) {
 	var (
 		jobKey    string

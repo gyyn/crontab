@@ -9,11 +9,19 @@ import (
 	"github.com/gorhill/cronexpr"
 )
 
+//Worker节点SSH信息
+type WorkerSSH struct {
+	User string `json:"user"` //用户名
+	Pwd  string `json:"pwd"`  //密码
+	Addr string `json:"addr"` //IP地址
+}
+
 //定时任务
 type Job struct {
 	Name     string `json:"name"`     //任务名
 	Command  string `json:"command"`  //shell命令
 	CronExpr string `json:"cronExpr"` //cron表达式
+	Email    string `json:"email"`    //报警邮件
 }
 
 //任务调度计划
@@ -64,6 +72,8 @@ type JobLog struct {
 	ScheduleTime int64  `json:"scheduleTime" bson:"scheduleTime"` //实际调度时间
 	StartTime    int64  `json:"startTime" bson:"startTime"`       //任务执行开始时间
 	EndTime      int64  `json:"endTime" bson:"endTime"`           //任务执行结束时间
+	LocalIP      string `json:"localIP" bson:"localIP"`           //工作Worker节点IP
+	Email        string `json:"email" bson:"email"`               //报警邮箱
 }
 
 //日志批次

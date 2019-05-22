@@ -2,7 +2,16 @@ package master
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
+	"net"
+	"os"
+	"path"
 	"time"
+
+	"github.com/pkg/sftp"
+
+	"golang.org/x/crypto/ssh"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
@@ -74,4 +83,84 @@ func InitWorkerMgr() (err error) {
 		lease:  lease,
 	}
 	return
+}
+
+type SSHCli struct {
+	user       string
+	pwd        string
+	addr       string
+	sshClient  *ssh.Client
+	sftpClient *sftp.Client
+	session    *ssh.Session
+	LastResult string
+}
+
+func (c *SSHCli) Connect() (*SSHCli, error) {
+	config := &ssh.ClientConfig{}
+	config.SetDefaults()
+	config.User = c.user
+	config.Auth = []ssh.AuthMethod{ssh.Password(c.pwd)}
+	config.HostKeyCallback = func(hostname string, remote net.Addr, key ssh.PublicKey) error { return nil }
+	sshClient, err := ssh.Dial("tcp", c.addr, config)
+	if err != nil {
+		return c, err
+	}
+	c.sshClient = sshClient
+
+	sftpClient, err := sftp.NewClient(sshClient)
+	if err != nil {
+		return c, err
+	}
+	c.sftpClient = sftpClient
+
+	fmt.Println("connect!")
+	return c, nil
+}
+
+func (c SSHCli) Run(shell string) (string, error) {
+	if c.sshClient == nil {
+		if _, err := c.Connect(); err != nil {
+			return "", err
+		}
+	}
+
+	session, err := c.sshClient.NewSession()
+	if err != nil {
+		return "", err
+	}
+	defer session.Close()
+
+	buf, err := session.CombinedOutput(shell)
+
+	c.LastResult = string(buf)
+	return c.LastResult, err
+}
+
+func (c SSHCli) SendFile(localFilePath string, remoteDir string) error {
+	if c.sshClient == nil {
+		if _, err := c.Connect(); err != nil {
+			return err
+		}
+	}
+
+	srcFile, err := os.Open(localFilePath)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	var remoteFileName = path.Base(localFilePath)
+	dstFile, err := c.sftpClient.Create(path.Join(remoteDir, remoteFileName))
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	ff, err := ioutil.ReadAll(srcFile)
+	if err != nil {
+		return err
+	}
+	dstFile.Write(ff)
+
+	return err
 }
