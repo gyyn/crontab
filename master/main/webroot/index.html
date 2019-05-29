@@ -16,7 +16,7 @@
     <div class="row">
         <div class="col-md-12">
             <div class="page-header">
-                <h1>管理后台<small>Golang分布式Crontab</small></h1>
+                <h1>管理后台<small></small></h1>
             </div>
         </div>
     </div>
@@ -280,6 +280,19 @@
                 }
             })
         })
+        // 立即执行一次任务
+        $("#job-list").on("click", ".once-job", function(event) {
+            var jobName = $(this).parents("tr").children(".job-name").text()
+            $.ajax({
+                url: '/job/once',
+                type: 'post',
+                dataType: 'json',
+                data: {name: jobName},
+                complete: function() {
+                    window.location.reload()
+                }
+            })
+        })
         // 保存任务
         $('#save-job').on('click', function() {
             var jobInfo = {name: $('#edit-name').val(), command: $('#edit-command').val(), cronExpr: $('#edit-cronExpr').val(), email: $('#edit-email').val()}
@@ -438,6 +451,7 @@
                             .append('<button class="btn btn-danger delete-job">删除</button>')
                             .append('<button class="btn btn-warning kill-job">强杀</button>')
                             .append('<button class="btn btn-success log-job">日志</button>')
+                            .append('<button class="btn btn-info once-job">立即执行一次</button>')
                         tr.append($('<td>').append(toolbar))
                         $("#job-list tbody").append(tr)
                     }

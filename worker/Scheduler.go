@@ -104,6 +104,10 @@ func (scheduler *Scheduler) handleJobEvent(jobEvent *common.JobEvent) {
 		if jobExecuteInfo, jobExecuting = scheduler.jobExecutingTable[jobEvent.Job.Name]; jobExecuting {
 			jobExecuteInfo.CancelFunc() //触发command杀死shell子进程, 任务得到退出
 		}
+	case common.JOB_EVENT_ONCE: //立即执行任务事件
+		if jobSchedulePlan, jobExisted = scheduler.jobPlanTable[jobEvent.Job.Name]; jobExisted {
+			scheduler.TryStartJob(jobSchedulePlan)
+		}
 	}
 }
 

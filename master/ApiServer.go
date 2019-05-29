@@ -154,6 +154,42 @@ ERR:
 	}
 }
 
+//任务立即执行一次
+//POST /job/once  name=job1
+func handleJobOnce(resp http.ResponseWriter, req *http.Request) {
+	var (
+		err   error
+		name  string
+		bytes []byte
+	)
+
+	//解析POST表单
+	if err = req.ParseForm(); err != nil {
+		goto ERR
+	}
+
+	//要立即执行的任务名
+	name = req.PostForm.Get("name")
+
+	fmt.Println(name)
+
+	//立即执行任务
+	if err = G_jobMgr.OnceJob(name); err != nil {
+		goto ERR
+	}
+
+	//正常应答
+	if bytes, err = common.BuildResponse(0, "success", nil); err == nil {
+		resp.Write(bytes)
+	}
+	return
+
+ERR:
+	if bytes, err = common.BuildResponse(-1, err.Error(), nil); err == nil {
+		resp.Write(bytes)
+	}
+}
+
 //查询任务日志
 func handleJobLog(resp http.ResponseWriter, req *http.Request) {
 	var (
@@ -356,6 +392,7 @@ func InitApiServer() (err error) {
 	mux.HandleFunc("/job/delete", handleJobDelete)
 	mux.HandleFunc("/job/list", handleJobList)
 	mux.HandleFunc("/job/kill", handleJobKill)
+	mux.HandleFunc("/job/once", handleJobOnce)
 	mux.HandleFunc("/job/log", handleJobLog)
 	mux.HandleFunc("/worker/list", handleWorkerList)
 	mux.HandleFunc("/worker/add", handleWorkerAdd)

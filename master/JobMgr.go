@@ -184,3 +184,31 @@ func (jobMgr *JobMgr) KillJob(name string) (err error) {
 	}
 	return
 }
+
+//立即执行任务
+func (jobMgr *JobMgr) OnceJob(name string) (err error) {
+	//更新一下key=/cron/once/任务名
+	var (
+		OnceKey        string
+		leaseGrantResp *clientv3.LeaseGrantResponse
+		leaseId        clientv3.LeaseID
+	)
+
+	//通知worker立即执行对应任务
+	OnceKey = common.JOB_ONCE_DIR + name
+
+	//让worker监听到一次put操作, 创建一个租约让其稍后自动过期即可
+	if leaseGrantResp, err = jobMgr.lease.Grant(context.TODO(), 1); err != nil {
+		return
+	}
+
+	//租约ID
+	leaseId = leaseGrantResp.ID
+
+	//设置killer标记
+	//带着租约put触发worker的监听，1s后过期
+	if _, err = jobMgr.kv.Put(context.TODO(), OnceKey, "", clientv3.WithLease(leaseId)); err != nil {
+		return
+	}
+	return
+}

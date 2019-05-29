@@ -115,6 +115,37 @@ func (jobMgr *JobMgr) watchKiller() {
 	}()
 }
 
+//监听立即执行任务通知
+func (jobMgr *JobMgr) watchOnce() {
+	var (
+		watchChan  clientv3.WatchChan
+		watchResp  clientv3.WatchResponse
+		watchEvent *clientv3.Event
+		jobEvent   *common.JobEvent
+		jobName    string
+		job        *common.Job
+	)
+	//监听/cron/once目录
+	go func() { //监听协程
+		//监听/cron/once/目录的变化
+		watchChan = jobMgr.watcher.Watch(context.TODO(), common.JOB_ONCE_DIR, clientv3.WithPrefix())
+		//处理监听事件
+		for watchResp = range watchChan {
+			for _, watchEvent = range watchResp.Events {
+				switch watchEvent.Type {
+				case mvccpb.PUT: //立即执行任务事件
+					jobName = common.ExtractOnceName(string(watchEvent.Kv.Key))
+					job = &common.Job{Name: jobName}
+					jobEvent = common.BuildJobEvent(common.JOB_EVENT_ONCE, job)
+					//事件推给scheduler
+					G_scheduler.PushJobEvent(jobEvent)
+				case mvccpb.DELETE: //once标记过期, 被自动删除
+				}
+			}
+		}
+	}()
+}
+
 //初始化管理器
 func InitJobMgr() (err error) {
 	var (
@@ -154,6 +185,9 @@ func InitJobMgr() (err error) {
 
 	//启动监听killer
 	G_jobMgr.watchKiller()
+
+	//启动监听once
+	G_jobMgr.watchOnce()
 
 	return
 }

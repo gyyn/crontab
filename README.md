@@ -42,7 +42,7 @@ MongoDB
 tar -zxvf mongodb-linux-x86_64-rhel70-4.0.0.tgz  
 cd mongodb-linux-x86_64-rhel70-4.0.0  
 mkdir data  
-nohup bin/mongod --dbpath=./data --bind_ip=0.0.0.0 &  
+nohup bin/mongod --dbpath=./data --bind_ip=0.0.0.0 > log.out 2>&1 &  
 bin/mongo  
 \> show databases  
 \> use my_db  

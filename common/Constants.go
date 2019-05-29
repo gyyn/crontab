@@ -7,6 +7,9 @@ const (
 	//任务强杀目录
 	JOB_KILLER_DIR = "cron/killer"
 
+	//任务立即执行目录
+	JOB_ONCE_DIR = "cron/once"
+
 	//任务锁目录
 	JOB_LOCK_DIR = "/cron/lock/"
 
@@ -21,4 +24,7 @@ const (
 
 	//强杀任务事件
 	JOB_EVENT_KILL = 3
+
+	//立即执行任务事件
+	JOB_EVENT_ONCE = 4
 )
