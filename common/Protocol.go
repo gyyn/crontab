@@ -133,8 +133,8 @@ func ExtractKillerName(killerKey string) string {
 }
 
 //从/cron/once/job1提取job1
-func ExtractOnceName(killerKey string) string {
-	return strings.TrimPrefix(killerKey, JOB_ONCE_DIR)
+func ExtractOnceName(OnceKey string) string {
+	return strings.TrimPrefix(OnceKey, JOB_ONCE_DIR)
 }
 
 //任务变化事件有2种：1）更新任务 2）删除任务
