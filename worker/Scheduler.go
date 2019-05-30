@@ -20,12 +20,30 @@ var (
 )
 
 //尝试执行任务
-func (scheduler *Scheduler) TryStartJob(jobPlan *common.JobSchedulePlan) {
+func (scheduler *Scheduler) TryStartJob(jobPlan *common.JobSchedulePlan, isOnce bool) {
 	//调度 和 执行 是2件事情
 	var (
 		jobExecuteInfo *common.JobExecuteInfo
 		jobExecuting   bool
 	)
+
+	if !isOnce {
+		job := jobPlan.Job
+		startTime := Str2Time(job.StartTime)
+		stopTime := Str2Time(job.StopTime)
+		if !startTime.IsZero() && !startTime.IsZero() && startTime.After(stopTime) {
+			return
+		}
+		now := time.Now()
+		//已到停止时间（停止时间在当前时间之前）
+		if !stopTime.IsZero() && stopTime.Before(now) {
+			return
+		}
+		//未到开始时间（开始时间在当前时间之后）
+		if !startTime.IsZero() && startTime.After(now) {
+			return
+		}
+	}
 
 	//执行的任务可能运行很久, 1分钟会调度60次，但是只能执行1次, 防止并发！
 
@@ -66,7 +84,7 @@ func (scheduler *Scheduler) TrySchedule() (scheduleAfter time.Duration) {
 	//遍历所有任务
 	for _, jobPlan = range scheduler.jobPlanTable {
 		if jobPlan.NextTime.Before(now) || jobPlan.NextTime.Equal(now) {
-			scheduler.TryStartJob(jobPlan)
+			scheduler.TryStartJob(jobPlan, false)
 			jobPlan.NextTime = jobPlan.Expr.Next(now) //更新下次执行时间
 		}
 
@@ -106,7 +124,7 @@ func (scheduler *Scheduler) handleJobEvent(jobEvent *common.JobEvent) {
 		}
 	case common.JOB_EVENT_ONCE: //立即执行任务事件
 		if jobSchedulePlan, jobExisted = scheduler.jobPlanTable[jobEvent.Job.Name]; jobExisted {
-			scheduler.TryStartJob(jobSchedulePlan)
+			scheduler.TryStartJob(jobSchedulePlan, true)
 		}
 	}
 }
@@ -198,4 +216,13 @@ func (scheduler *Scheduler) PushJobEvent(jobEvent *common.JobEvent) {
 //回传任务执行结果
 func (scheduler *Scheduler) PushJobResult(jobResult *common.JobExecuteResult) {
 	scheduler.jobResultChan <- jobResult
+}
+
+//字符串->时间对象
+func Str2Time(formatTimeStr string) time.Time {
+	timeLayout := "2006-01-02 15:04:05"
+	loc, _ := time.LoadLocation("Local")
+	theTime, _ := time.ParseInLocation(timeLayout, formatTimeStr, loc) //使用模板在对应时区转化为time.time类型
+
+	return theTime
 }

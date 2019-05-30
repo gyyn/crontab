@@ -18,10 +18,13 @@ type WorkerSSH struct {
 
 //定时任务
 type Job struct {
-	Name     string `json:"name"`     //任务名
-	Command  string `json:"command"`  //shell命令
-	CronExpr string `json:"cronExpr"` //cron表达式
-	Email    string `json:"email"`    //报警邮件
+	Name      string `json:"name"`      //任务名
+	Command   string `json:"command"`   //shell命令
+	CronExpr  string `json:"cronExpr"`  //cron表达式
+	Email     string `json:"email"`     //报警邮件
+	StartTime string `json:"startTime"` //任务开始时间
+	StopTime  string `json:"stopTime"`  //任务停止时间
+	Details   string `json:"details"`   //任务详情
 }
 
 //任务调度计划

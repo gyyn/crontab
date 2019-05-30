@@ -43,6 +43,9 @@
                             <th>shell命令</th>
                             <th>cron表达式</th>
                             <th>报警邮箱</th>
+                            <th>任务开始时间</th>
+                            <th>任务结束时间</th>
+                            <th>任务详情</th>
                             <th>任务操作</th>
                         </tr>
                         </thead>
@@ -80,6 +83,18 @@
                     <div class="form-group">
                         <label for="edit-email">报警邮箱</label>
                         <input type="text" class="form-control" id="edit-email" placeholder="报警邮箱">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-startTime">任务开始时间</label>
+                        <input type="text" class="form-control" id="edit-startTime" placeholder="格式:2006-01-02 15:03:04">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-stopTime">任务停止时间</label>
+                        <input type="text" class="form-control" id="edit-stopTime" placeholder="格式:2006-01-02 15:03:04">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-details">任务详情</label>
+                        <input type="text" class="form-control" id="edit-details" placeholder="任务详情">
                     </div>
                 </form>
             </div>
@@ -251,6 +266,9 @@
             $('#edit-command').val($(this).parents('tr').children('.job-command').text())
             $('#edit-cronExpr').val($(this).parents('tr').children('.job-cronExpr').text())
             $('#edit-email').val($(this).parents('tr').children('.job-email').text())
+            $('#edit-startTime').val($(this).parents('tr').children('.job-startTime').text())
+            $('#edit-stopTime').val($(this).parents('tr').children('.job-stopTime').text())
+            $('#edit-details').val($(this).parents('tr').children('.job-details').text())
             // 弹出模态框
             $('#edit-modal').modal('show')
         })
@@ -295,7 +313,14 @@
         })
         // 保存任务
         $('#save-job').on('click', function() {
-            var jobInfo = {name: $('#edit-name').val(), command: $('#edit-command').val(), cronExpr: $('#edit-cronExpr').val(), email: $('#edit-email').val()}
+            var jobInfo = {name: $('#edit-name').val(),
+                command: $('#edit-command').val(),
+                cronExpr: $('#edit-cronExpr').val(),
+                email: $('#edit-email').val(),
+                startTime: $('#edit-startTime').val(),
+                stopTime: $('#edit-stopTime').val(),
+                details: $('#edit-details').val()
+                }
             $.ajax({
                 url: '/job/save',
                 type: 'post',
@@ -312,6 +337,9 @@
             $('#edit-command').val("")
             $('#edit-cronExpr').val("")
             $('#edit-email').val("")
+            $('#edit-startTime').val("")
+            $('#edit-stopTime').val("")
+            $('#edit-details').val("")
             $('#edit-modal').modal('show')
         })
         //添加Worker节点确定
@@ -446,12 +474,15 @@
                         tr.append($('<td class="job-command">').html(job.command))
                         tr.append($('<td class="job-cronExpr">').html(job.cronExpr))
                         tr.append($('<td class="job-email">').html(job.email))
+                        tr.append($('<td class="job-startTime">').html(job.startTime))
+                        tr.append($('<td class="job-stopTime">').html(job.stopTime))
+                        tr.append($('<td class="job-details">').html(job.details))
                         var toolbar = $('<div class="btn-toolbar">')
                             .append('<button class="btn btn-info edit-job">编辑</button>')
                             .append('<button class="btn btn-danger delete-job">删除</button>')
                             .append('<button class="btn btn-warning kill-job">强杀</button>')
-                            .append('<button class="btn btn-success log-job">日志</button>')
                             .append('<button class="btn btn-info once-job">立即执行一次</button>')
+                            .append('<button class="btn btn-success log-job">日志</button>')
                         tr.append($('<td>').append(toolbar))
                         $("#job-list tbody").append(tr)
                     }
