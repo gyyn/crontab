@@ -147,7 +147,7 @@ func sendMail(to []string, subject string, body string) error {
 	//465 SMTPS
 	port := 465
 	from := "gpcrontab@163.com"
-	send_to := StrSliceRemoveRepeat(to) // 取重
+	send_to := common.StrSliceRemoveRepeat(to) // 去重
 	m := gomail.NewMessage()
 	m.SetAddressHeader("From", from, from) //发件人
 	m.SetHeader("To", send_to...)          //收件人
@@ -158,23 +158,4 @@ func sendMail(to []string, subject string, body string) error {
 	//m.Attach("/home/Alex/lolcat.jpg") //附件
 	d := gomail.NewDialer(host, port, username, password)
 	return d.DialAndSend(m)
-}
-
-// slice去重
-func StrSliceRemoveRepeat(slice []string) (newSlice []string) {
-	for _, val := range slice {
-		if len(newSlice) == 0 {
-			newSlice = append(newSlice, val)
-		} else {
-			for k, v := range newSlice {
-				if val == v {
-					break
-				}
-				if k == len(newSlice)-1 {
-					newSlice = append(newSlice, val)
-				}
-			}
-		}
-	}
-	return
 }

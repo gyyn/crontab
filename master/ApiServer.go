@@ -235,6 +235,51 @@ ERR:
 	}
 }
 
+//查询任务最近工作节点
+func handleJobRecentWorker(resp http.ResponseWriter, req *http.Request) {
+	var (
+		err        error
+		name       string // 任务名字
+		skipParam  string // 从第几条开始
+		limitParam string // 返回多少条
+		skip       int
+		limit      int
+		workerArr  []string
+		bytes      []byte
+	)
+
+	//解析GET参数
+	if err = req.ParseForm(); err != nil {
+		goto ERR
+	}
+
+	//获取请求参数 /job/log?name=job10&skip=0&limit=10
+	name = req.Form.Get("name")
+	skipParam = req.Form.Get("skip")
+	limitParam = req.Form.Get("limit")
+	if skip, err = strconv.Atoi(skipParam); err != nil {
+		skip = 0
+	}
+	if limit, err = strconv.Atoi(limitParam); err != nil {
+		limit = 20
+	}
+
+	if workerArr, err = G_logMgr.ListRecentWorker(name, skip, limit); err != nil {
+		goto ERR
+	}
+
+	//正常应答
+	if bytes, err = common.BuildResponse(0, "success", workerArr); err == nil {
+		resp.Write(bytes)
+	}
+	return
+
+ERR:
+	if bytes, err = common.BuildResponse(-1, err.Error(), nil); err == nil {
+		resp.Write(bytes)
+	}
+}
+
 //获取健康worker节点列表
 func handleWorkerList(resp http.ResponseWriter, req *http.Request) {
 	var (
@@ -292,9 +337,9 @@ func handleWorkerAdd(resp http.ResponseWriter, req *http.Request) {
 	//if err = cli.SendFile("./worker", "./"); err != nil {
 	//	goto ERR
 	//}
-	if err = cli.SendFile("./worker.json", "./"); err != nil {
-		goto ERR
-	}
+	//if err = cli.SendFile("./worker.json", "./"); err != nil {
+	//	goto ERR
+	//}
 
 	if output, err = cli.Run("chmod u+x ./worker"); err != nil {
 		goto ERR
@@ -394,6 +439,7 @@ func InitApiServer() (err error) {
 	mux.HandleFunc("/job/kill", handleJobKill)
 	mux.HandleFunc("/job/once", handleJobOnce)
 	mux.HandleFunc("/job/log", handleJobLog)
+	mux.HandleFunc("/job/recentworker", handleJobRecentWorker)
 	mux.HandleFunc("/worker/list", handleWorkerList)
 	mux.HandleFunc("/worker/add", handleWorkerAdd)
 	mux.HandleFunc("/worker/delete", handleWorkerDelete)

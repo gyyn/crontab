@@ -183,3 +183,22 @@ func BuildJobExecuteInfo(jobSchedulePlan *JobSchedulePlan) (jobExecuteInfo *JobE
 func ExtractWorkerIP(regKey string) string {
 	return strings.TrimPrefix(regKey, JOB_WORKER_DIR)
 }
+
+// slice去重
+func StrSliceRemoveRepeat(slice []string) (newSlice []string) {
+	for _, val := range slice {
+		if len(newSlice) == 0 {
+			newSlice = append(newSlice, val)
+		} else {
+			for k, v := range newSlice {
+				if val == v {
+					break
+				}
+				if k == len(newSlice)-1 {
+					newSlice = append(newSlice, val)
+				}
+			}
+		}
+	}
+	return
+}

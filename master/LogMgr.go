@@ -77,3 +77,29 @@ func (logMgr *LogMgr) ListLog(name string, skip int, limit int) (logArr []*commo
 	}
 	return
 }
+
+//查看任务最近工作节点
+func (logMgr *LogMgr) ListRecentWorker(name string, skip int, limit int) (workerArr []string, err error) {
+	var (
+		logArr   []*common.JobLog
+		jobLog   *common.JobLog
+		workerIP string
+	)
+
+	if logArr, err = G_logMgr.ListLog(name, skip, limit); err != nil {
+		return
+	}
+
+	//初始化数组
+	workerArr = make([]string, 0)
+
+	//解析每个节点的IP
+	for _, jobLog = range logArr {
+		workerIP = jobLog.LocalIP
+		workerArr = append(workerArr, workerIP)
+	}
+
+	workerArr = common.StrSliceRemoveRepeat(workerArr)
+
+	return
+}
