@@ -349,12 +349,54 @@
                 details: $('#edit-details').val()
                 }
             $.ajax({
-                url: '/job/save',
+                url: '/job/judge',
                 type: 'post',
                 dataType: 'json',
                 data: {job: JSON.stringify(jobInfo)},
-                complete: function() {
-                    window.location.reload()
+                success:function(resp) {
+                    if(resp.errno == -2) {
+                        alert("任务名未填写")
+                        return
+                    }
+                    else if(resp.errno == -3) {
+                        alert("任务shell命令未填写")
+                        return
+                    }
+                    else if(resp.errno == -4) {
+                        alert("cron表达式填写错误")
+                        return
+                    }
+                    else if(resp.errno == -5) {
+                        alert("任务报警邮箱填写错误")
+                        return
+                    }
+                    else if(resp.errno == -6) {
+                        alert("任务开始时间填写错误")
+                        return
+                    }
+                    else if(resp.errno == -7) {
+                        alert("任务停止时间填写错误")
+                        return
+                    }
+                    else if(resp.errno == -8) {
+                        alert("任务时间填写错误，开始时间晚于停止时间")
+                        return
+                    }
+                    else if(resp.errno == -9) {
+                        alert("任务详情未填写")
+                        return
+                    }
+                    else if(resp.errno == 0) {
+                        $.ajax({
+                            url: '/job/save',
+                            type: 'post',
+                            dataType: 'json',
+                            data: {job: JSON.stringify(jobInfo)},
+                            complete: function() {
+                                window.location.reload()
+                            }
+                        })
+                    }
                 }
             })
         })
@@ -373,12 +415,38 @@
         $('#add-worker-do').on('click', function() {
             var workerSSHInfo = {user: $('#edit-add-user').val(), pwd: $('#edit-add-pwd').val(), addr: $('#edit-add-addr').val()}
             $.ajax({
-                url: '/worker/add',
+                url: '/worker/judge',
                 type: 'post',
                 dataType: 'json',
-                data: {addworker: JSON.stringify(workerSSHInfo)},
-                complete: function() {
-                    window.location.reload()
+                data: {worker: JSON.stringify(workerSSHInfo)},
+                success: function(resp) {
+                    if(resp.errno == -2) {
+                        alert("用户名未填写")
+                        return
+                    }
+                    else if(resp.errno == -3) {
+                        alert("密码未填写")
+                        return
+                    }
+                    else if(resp.errno == -4) {
+                        alert("IP填写错误")
+                        return
+                    }
+                    else if(resp.errno == -5) {
+                        alert("连接失败")
+                        return
+                    }
+                    else if(resp.errno == 0) {
+                        $.ajax({
+                            url: '/worker/add',
+                            type: 'post',
+                            dataType: 'json',
+                            data: {worker: JSON.stringify(workerSSHInfo)},
+                            complete: function() {
+                                window.location.reload()
+                            }
+                        })
+                    }
                 }
             })
         })
@@ -393,12 +461,38 @@
         $('#delete-worker-do').on('click', function() {
             var workerSSHInfo = {user: $('#edit-delete-user').val(), pwd: $('#edit-delete-pwd').val(), addr: $('#edit-delete-addr').val()}
             $.ajax({
-                url: '/worker/delete',
+                url: '/worker/judge',
                 type: 'post',
                 dataType: 'json',
-                data: {deleteworker: JSON.stringify(workerSSHInfo)},
-                complete: function() {
-                    window.location.reload()
+                data: {worker: JSON.stringify(workerSSHInfo)},
+                success: function(resp) {
+                    if(resp.errno == -2) {
+                        alert("用户名未填写")
+                        return
+                    }
+                    else if(resp.errno == -3) {
+                        alert("密码未填写")
+                        return
+                    }
+                    else if(resp.errno == -4) {
+                        alert("IP填写错误")
+                        return
+                    }
+                    else if(resp.errno == -5) {
+                        alert("连接失败")
+                        return
+                    }
+                    else if(resp.errno == 0) {
+                        $.ajax({
+                            url: '/worker/delete',
+                            type: 'post',
+                            dataType: 'json',
+                            data: {worker: JSON.stringify(workerSSHInfo)},
+                            complete: function() {
+                                window.location.reload()
+                            }
+                        })
+                    }
                 }
             })
         })

@@ -29,8 +29,8 @@ func (scheduler *Scheduler) TryStartJob(jobPlan *common.JobSchedulePlan, isOnce 
 
 	if !isOnce {
 		job := jobPlan.Job
-		startTime := Str2Time(job.StartTime)
-		stopTime := Str2Time(job.StopTime)
+		startTime := common.Str2Time(job.StartTime)
+		stopTime := common.Str2Time(job.StopTime)
 		if !startTime.IsZero() && !startTime.IsZero() && startTime.After(stopTime) {
 			return
 		}
@@ -216,13 +216,4 @@ func (scheduler *Scheduler) PushJobEvent(jobEvent *common.JobEvent) {
 //回传任务执行结果
 func (scheduler *Scheduler) PushJobResult(jobResult *common.JobExecuteResult) {
 	scheduler.jobResultChan <- jobResult
-}
-
-//字符串->时间对象
-func Str2Time(formatTimeStr string) time.Time {
-	timeLayout := "2006-01-02 15:04:05"
-	loc, _ := time.LoadLocation("Local")
-	theTime, _ := time.ParseInLocation(timeLayout, formatTimeStr, loc) //使用模板在对应时区转化为time.time类型
-
-	return theTime
 }

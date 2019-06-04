@@ -3,6 +3,8 @@ package common
 import (
 	"context"
 	"encoding/json"
+	"net"
+	"regexp"
 	"strings"
 	"time"
 
@@ -201,4 +203,27 @@ func StrSliceRemoveRepeat(slice []string) (newSlice []string) {
 		}
 	}
 	return
+}
+
+//字符串->时间对象
+func Str2Time(formatTimeStr string) time.Time {
+	timeLayout := "2006-01-02 15:04:05"
+	loc, _ := time.LoadLocation("Local")
+	theTime, _ := time.ParseInLocation(timeLayout, formatTimeStr, loc) //使用模板在对应时区转化为time.time类型
+
+	return theTime
+}
+
+func VerifyEmailFormat(email string) bool {
+	pattern := `\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*` //匹配电子邮箱
+	reg := regexp.MustCompile(pattern)
+	return reg.MatchString(email)
+}
+
+func VerifyIPFormat(ipstr string) bool {
+	ip := net.ParseIP(ipstr)
+	if ip == nil {
+		return false
+	}
+	return true
 }

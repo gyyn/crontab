@@ -2,12 +2,15 @@ package master
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gorhill/cronexpr"
 
 	"github.com/gyyn/crontab/common"
 )
@@ -21,6 +24,105 @@ var (
 	//单例对象
 	G_apiServer *ApiServer
 )
+
+//判断任务配置参数是否合规
+func handleJobJudge(resp http.ResponseWriter, req *http.Request) {
+	var (
+		err       error
+		postJob   string
+		job       common.Job
+		bytes     []byte
+		startTime time.Time
+		stopTime  time.Time
+		errno     int
+	)
+
+	//解析post表单
+	if err = req.ParseForm(); err != nil {
+		errno = -1
+		goto ERR
+	}
+
+	//取表单中的job字段
+	postJob = req.PostForm.Get("job")
+
+	//反序列化job
+	if err = json.Unmarshal([]byte(postJob), &job); err != nil {
+		errno = -1
+		goto ERR
+	}
+
+	//判断job的name
+	if job.Name == "" {
+		errno = -2
+		err = errors.New("NameErr")
+		goto ERR
+	}
+	//判断job的shell
+	if job.Command == "" {
+		errno = -3
+		err = errors.New("CommandErr")
+		goto ERR
+	}
+
+	//判断job的cron表达式
+	if _, err = cronexpr.Parse(job.CronExpr); err != nil {
+		errno = -4
+		goto ERR
+	}
+
+	//判断job的报警email
+	if job.Email == "" || !common.VerifyEmailFormat(job.Email) {
+		errno = -5
+		err = errors.New("EmailErr")
+		goto ERR
+	}
+
+	//判断job的开始时间
+	if job.StartTime != "" {
+		startTime = common.Str2Time(job.StartTime)
+		if startTime.IsZero() {
+			errno = -6
+			err = errors.New("StartTimeErr")
+			goto ERR
+		}
+	}
+
+	//判断job的停止时间
+	if job.StopTime != "" {
+		stopTime = common.Str2Time(job.StopTime)
+		if stopTime.IsZero() {
+			errno = -7
+			err = errors.New("StopTimeErr")
+			goto ERR
+		}
+	}
+
+	//job开始时间在停止时间之后
+	if !startTime.IsZero() && !stopTime.IsZero() && startTime.After(stopTime) {
+		errno = -8
+		err = errors.New("TimeErr")
+		goto ERR
+	}
+
+	//判断job的详情
+	if job.Details == "" {
+		errno = -9
+		err = errors.New("DetailsErr")
+		goto ERR
+	}
+
+	//返回正常应答({"errno": 0, "msg": "", "data": {....}})
+	if bytes, err = common.BuildResponse(0, "success", nil); err == nil {
+		resp.Write(bytes)
+	}
+	return
+ERR:
+	//返回异常应答
+	if bytes, err = common.BuildResponse(errno, err.Error(), nil); err == nil {
+		resp.Write(bytes)
+	}
+}
 
 //保存任务接口
 //POST job={"name": "job1", "command": "echo hello", "cronExpr": "* * * * *"}
@@ -304,7 +406,7 @@ ERR:
 	}
 }
 
-//POST addworker={"user": "admin", "pwd": "hahaha", "addr": "111.111.111.111"}
+//POST worker={"user": "admin", "pwd": "hahaha", "addr": "111.111.111.111"}
 func handleWorkerAdd(resp http.ResponseWriter, req *http.Request) {
 	var (
 		err           error
@@ -320,8 +422,8 @@ func handleWorkerAdd(resp http.ResponseWriter, req *http.Request) {
 		goto ERR
 	}
 
-	//取表单中的addworker字段
-	postAddworker = req.PostForm.Get("addworker")
+	//取表单中的worker字段
+	postAddworker = req.PostForm.Get("worker")
 
 	//反序列化workerSSH
 	if err = json.Unmarshal([]byte(postAddworker), &workerSSH); err != nil {
@@ -380,8 +482,8 @@ func handleWorkerDelete(resp http.ResponseWriter, req *http.Request) {
 		goto ERR
 	}
 
-	//取表单中的deleteworker字段
-	postAddworker = req.PostForm.Get("deleteworker")
+	//取表单中的worker字段
+	postAddworker = req.PostForm.Get("worker")
 
 	//反序列化workerSSH
 	if err = json.Unmarshal([]byte(postAddworker), &workerSSH); err != nil {
@@ -422,6 +524,77 @@ ERR:
 	}
 }
 
+//判断Worker配置参数是否合规
+func handleWorkerJudge(resp http.ResponseWriter, req *http.Request) {
+	var (
+		errno      int
+		err        error
+		postworker string
+		workerSSH  common.WorkerSSH
+		cli        SSHCli
+		bytes      []byte
+	)
+
+	//解析post表单
+	if err = req.ParseForm(); err != nil {
+		errno = -1
+		goto ERR
+	}
+
+	//取表单中的worker字段
+	postworker = req.PostForm.Get("worker")
+
+	//反序列化workerSSH
+	if err = json.Unmarshal([]byte(postworker), &workerSSH); err != nil {
+		errno = -1
+		goto ERR
+	}
+
+	//判断worker用户名
+	if workerSSH.User == "" {
+		errno = -2
+		err = errors.New("UserErr")
+		goto ERR
+	}
+
+	//判断worker密码
+	if workerSSH.Pwd == "" {
+		errno = -3
+		err = errors.New("PwdErr")
+		goto ERR
+	}
+
+	//判断workerIP
+	if workerSSH.Addr == "" || !common.VerifyIPFormat(workerSSH.Addr) {
+		errno = -4
+		err = errors.New("IPErr")
+		goto ERR
+	}
+
+	//判断连接
+	//cli = SSHCli{
+	//	user: workerSSH.User,
+	//	pwd:  workerSSH.Pwd,
+	//	addr: workerSSH.Addr + ":22",
+	//}
+
+	//if _, err = cli.Connect(); err != nil {
+	//	errno = -5
+	//	goto ERR
+	//}
+
+	//返回正常应答
+	if bytes, err = common.BuildResponse(0, "success", nil); err == nil {
+		resp.Write(bytes)
+	}
+	return
+ERR:
+	//返回异常应答
+	if bytes, err = common.BuildResponse(errno, err.Error(), nil); err == nil {
+		resp.Write(bytes)
+	}
+}
+
 //初始化服务
 func InitApiServer() (err error) {
 	var (
@@ -433,6 +606,7 @@ func InitApiServer() (err error) {
 	)
 	//配置路由
 	mux = http.NewServeMux()
+	mux.HandleFunc("/job/judge", handleJobJudge)
 	mux.HandleFunc("/job/save", handleJobSave)
 	mux.HandleFunc("/job/delete", handleJobDelete)
 	mux.HandleFunc("/job/list", handleJobList)
@@ -443,6 +617,7 @@ func InitApiServer() (err error) {
 	mux.HandleFunc("/worker/list", handleWorkerList)
 	mux.HandleFunc("/worker/add", handleWorkerAdd)
 	mux.HandleFunc("/worker/delete", handleWorkerDelete)
+	mux.HandleFunc("/worker/judge", handleWorkerJudge)
 
 	///index.html
 	//静态文件目录
