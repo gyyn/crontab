@@ -531,8 +531,8 @@ func handleWorkerJudge(resp http.ResponseWriter, req *http.Request) {
 		err        error
 		postworker string
 		workerSSH  common.WorkerSSH
-		cli        SSHCli
-		bytes      []byte
+		//cli        SSHCli
+		bytes []byte
 	)
 
 	//解析post表单

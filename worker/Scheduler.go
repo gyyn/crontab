@@ -183,10 +183,10 @@ func (scheduler *Scheduler) scheduleLoop() {
 		case jobEvent = <-scheduler.jobEventChan: //监听任务变化事件
 			//对内存中维护的任务列表做增删改查
 			scheduler.handleJobEvent(jobEvent)
-			//定时器到期，阻塞解除
-		case <-scheduleTimer.C: //最近的任务到期了
 		case jobResult = <-scheduler.jobResultChan: //监听任务执行结果
 			scheduler.handleJobResult(jobResult)
+			//定时器到期，阻塞解除
+		case <-scheduleTimer.C: //最近的任务到期了
 		}
 		//调度一次任务
 		scheduleAfter = scheduler.TrySchedule()

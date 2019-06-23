@@ -41,7 +41,7 @@ func (executor *Executor) ExecuteJob(info *common.JobExecuteInfo) {
 
 		//上锁
 		//随机睡眠(0~1s)
-		time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+		time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
 
 		err = jobLock.TryLock()
 		//defer 函数执行后调用
