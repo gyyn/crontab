@@ -1,12 +1,22 @@
 # crontab
 
-etcd  
+安装Go,Goland  
+export GOPATH=pwd  
+  
+go get github.com/kardianos/govendor  
+  
+Goland设置  
+go build master.go启动目录crontab\master\main  
+go build worker.go启动目录crontab\worker\main  
+  
+etcd搭建  
 tar -zxvf etcd-v3.3.8-linux-amd64.tar.gz  
 单机  
 nohup ./etcd --listen-client-urls 'http://0.0.0.0:2379' --advertise-client-urls 'http://0.0.0.0:2379' &  
 ETCDCTL_API=3 ./etcdctl put "name" "gyyn"  
 
 集群  
+先为集群节点配置host文件
 nohup ./etcd --name centos1 \  
 --initial-advertise-peer-urls http://192.168.0.111:2380 \  
 --listen-peer-urls http://192.168.0.111:2380 \  
@@ -14,7 +24,7 @@ nohup ./etcd --name centos1 \
 --advertise-client-urls http://192.168.0.111:2379 \  
 --initial-cluster-token etcd-cluster-1 \  
 --initial-cluster centos1=http://192.168.0.111:2380,centos2=http://192.168.0.112:2380,centos3=http://192.168.0.113:2380 \  
---initial-cluster-state new &  
+--initial-cluster-state new > log.out 2>&1 &  
 
 nohup ./etcd --name centos2 \  
 --initial-advertise-peer-urls http://192.168.0.112:2380 \  
@@ -23,7 +33,7 @@ nohup ./etcd --name centos2 \
 --advertise-client-urls http://192.168.0.112:2379 \  
 --initial-cluster-token etcd-cluster-1 \  
 --initial-cluster centos1=http://192.168.0.111:2380,centos2=http://192.168.0.112:2380,centos3=http://192.168.0.113:2380 \  
---initial-cluster-state new &  
+--initial-cluster-state new > log.out 2>&1 &  
 
 nohup ./etcd --name centos3 \  
 --initial-advertise-peer-urls http://192.168.0.113:2380 \  
@@ -32,7 +42,7 @@ nohup ./etcd --name centos3 \
 --advertise-client-urls http://192.168.0.113:2379 \  
 --initial-cluster-token etcd-cluster-1 \  
 --initial-cluster centos1=http://192.168.0.111:2380,centos2=http://192.168.0.112:2380,centos3=http://192.168.0.113:2380 \  
---initial-cluster-state new &  
+--initial-cluster-state new > log.out 2>&1 &  
 
 etcdctl cluster-health  
 etcdctl member list  
